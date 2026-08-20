@@ -50,3 +50,7 @@ swift test                                            # 回收站逻辑，9 个�
 xcodebuild -project SPhoto.xcodeproj -target SPhoto \
   -sdk iphonesimulator CODE_SIGNING_ALLOWED=NO build  # 编译整个 App
 ```
+
+## 许可证
+
+[MIT](LICENSE)
