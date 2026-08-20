@@ -17,8 +17,15 @@ struct PhotoDetailView: View {
     private static let axisLockThreshold: CGFloat = 10
     /// 横向位移超过屏宽的这个比例才翻页。
     private static let pageTriggerRatio: CGFloat = 0.25
-    /// 需求要求上滑超过屏幕高度一半才移入回收站。
-    private static let discardTriggerRatio: CGFloat = 0.5
+    /// 上滑移入回收站的距离阈值，占屏幕高度的比例。
+    ///
+    /// 苹果没有公开「上滑要滑多远」的数值，官方给的是 WWDC18《Designing Fluid Interfaces》
+    /// 的速度投影思路：拿手指抬起瞬间的速度推算它「本来会滑到哪」，再拿那个位置去判定。
+    /// SwiftUI 的 `predictedEndTranslation` 就是这个投影。所以距离阈值只保留慢拖时的判定，
+    /// 快速轻扫由投影提前触发，不必真的拖那么长。
+    private static let discardTriggerRatio: CGFloat = 0.2
+    /// 防误触底线：实际行程不到这个值一律不删，再快的轻扫也不行。
+    private static let minimumDiscardTravel: CGFloat = 60
 
     private enum DragAxis { case horizontal, vertical }
 
@@ -118,7 +125,11 @@ struct PhotoDetailView: View {
                 case .horizontal:
                     endHorizontalDrag(translation: value.translation.width, screenWidth: size.width)
                 case .vertical:
-                    endVerticalDrag(translation: min(0, value.translation.height), screenHeight: size.height)
+                    endVerticalDrag(
+                        translation: min(0, value.translation.height),
+                        predictedTranslation: min(0, value.predictedEndTranslation.height),
+                        screenHeight: size.height
+                    )
                 case nil:
                     break
                 }
@@ -141,8 +152,13 @@ struct PhotoDetailView: View {
         }
     }
 
-    private func endVerticalDrag(translation: CGFloat, screenHeight: CGFloat) {
-        guard -translation > screenHeight * Self.discardTriggerRatio else {
+    /// 慢拖看实际位移，快扫看速度投影，两者任一越线就移入回收站。
+    private func endVerticalDrag(translation: CGFloat, predictedTranslation: CGFloat, screenHeight: CGFloat) {
+        let travelled = -translation
+        let projected = -predictedTranslation
+        let threshold = screenHeight * Self.discardTriggerRatio
+
+        guard travelled >= Self.minimumDiscardTravel, max(travelled, projected) >= threshold else {
             withAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.85)) { dragY = 0 }
             return
         }
