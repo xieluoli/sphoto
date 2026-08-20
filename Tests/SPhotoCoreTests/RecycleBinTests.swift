@@ -68,4 +68,30 @@ final class RecycleBinTests: XCTestCase {
         XCTAssertEqual(bin.restoreLatest(), "A")
         XCTAssertNil(bin.restoreLatest())
     }
+
+    // spec: recycle-bin「用户确认删除 → 回收站清空」
+    func test_提交删除后这些资源已不在相册回收站被清空() {
+        var bin = RecycleBin()
+        bin.add("A")
+        bin.add("B")
+
+        // 提交删除成功后重新拉取相册，A/B 已进系统「最近删除」，不再出现在可见资源里
+        bin.prune(keepingOnly: ["C"])
+
+        XCTAssertTrue(bin.isEmpty)
+        XCTAssertNil(bin.restoreLatest())
+    }
+
+    // spec: recycle-bin「用户取消删除 → 回收站原样保留」
+    func test_取消删除后回收站原样保留() {
+        var bin = RecycleBin()
+        bin.add("A")
+        bin.add("B")
+
+        // 用户在系统确认框点了取消，相册没有变化
+        bin.prune(keepingOnly: ["A", "B", "C"])
+
+        XCTAssertEqual(bin.identifiers, ["A", "B"])
+        XCTAssertEqual(bin.restoreLatest(), "B")
+    }
 }

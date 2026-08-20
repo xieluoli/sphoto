@@ -63,6 +63,25 @@ final class PhotoLibraryModel {
         return allAssets.first { $0.localIdentifier == identifier }
     }
 
+    /// 把回收站里的照片一次性移入系统相册的「最近删除」。
+    ///
+    /// 系统只弹一次确认框。用户取消时回收站原样保留——删除没发生，不需要额外处理。
+    /// 删除成功后重新拉取相册，已删资源不再返回，`reload` 里的 `prune` 会把回收站清空。
+    func deleteStaged() async {
+        let staged = Set(recycleBin.identifiers)
+        let assets = allAssets.filter { staged.contains($0.localIdentifier) }
+        guard !assets.isEmpty else { return }
+
+        do {
+            try await PHPhotoLibrary.shared().performChanges {
+                PHAssetChangeRequest.deleteAssets(assets as NSArray)
+            }
+            await reload()
+        } catch {
+            // 用户在系统确认框点了取消，回收站原样保留
+        }
+    }
+
     private var canReadLibrary: Bool {
         authorization == .authorized || authorization == .limited
     }

@@ -1,4 +1,5 @@
 import Photos
+import PhotosUI
 import SwiftUI
 
 struct PhotoGridView: View {
@@ -27,7 +28,11 @@ struct PhotoGridView: View {
             }
             .safeAreaInset(edge: .bottom) {
                 if !model.recycleBin.isEmpty {
-                    RestoreBar(count: model.recycleBin.count) { model.restoreLatest() }
+                    RecycleBinBar(
+                        count: model.recycleBin.count,
+                        onRestore: { model.restoreLatest() },
+                        onDelete: { Task { await model.deleteStaged() } }
+                    )
                 }
             }
         }

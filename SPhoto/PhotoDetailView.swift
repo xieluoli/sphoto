@@ -1,7 +1,7 @@
 import Photos
 import SwiftUI
 
-/// 大图页：左滑下一张、右滑上一张、上滑过半移入回收站，底部固定「恢复」。
+/// 大图页：左滑下一张、右滑上一张、上滑过半移入回收站，底部固定「恢复」+「删除」。
 struct PhotoDetailView: View {
 
     let model: PhotoLibraryModel
@@ -49,7 +49,11 @@ struct PhotoDetailView: View {
         .overlay(alignment: .topTrailing) { closeButton }
         .background(Color.black.ignoresSafeArea())
         .safeAreaInset(edge: .bottom) {
-            RestoreBar(count: model.recycleBin.count, action: restoreLatest)
+            RecycleBinBar(
+                count: model.recycleBin.count,
+                onRestore: restoreLatest,
+                onDelete: { Task { await model.deleteStaged() } }
+            )
         }
         .onChange(of: model.assets.count) { _, _ in clampIndex() }
     }
@@ -88,7 +92,7 @@ struct PhotoDetailView: View {
     private func pageOpacity(at i: Int, screenHeight: CGFloat) -> Double {
         guard i == index, dragY < 0 else { return 1 }
         let progress = min(1, -dragY / (screenHeight * Self.discardTriggerRatio))
-        return 1 - progress * 0.6
+        return 1 - Double(progress) * 0.6
     }
 
     private func dragGesture(in size: CGSize) -> some Gesture {
