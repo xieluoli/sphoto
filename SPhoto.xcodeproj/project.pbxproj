@@ -7,30 +7,30 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		BFEC1060FE675E51F306F400 /* SPhotoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 271C2C16E7F5BC511D14978C /* SPhotoApp.swift */; };
-		A65ABCF810F4BFD18B7DD3B6 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CFFEC0B33112FB1C76AF232 /* RootView.swift */; };
 		08DC7EDFB15DD6A273AB16EE /* PhotoLibraryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5519099CBFACE69E32E866F7 /* PhotoLibraryModel.swift */; };
-		DC5F06A7A4A1D3E8FD2CCBDA /* PhotoImageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C93259F2D00D4A85C5AB1C23 /* PhotoImageProvider.swift */; };
 		21F6C674C45C37C402BBF35F /* PhotoGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2338613016556CFE46787817 /* PhotoGridView.swift */; };
-		830E0334752C8944379C1BF8 /* ThumbnailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D7169657F1AC1748A4C3B0D /* ThumbnailView.swift */; };
-		6CF8F16F24AD73E299EBEFDA /* PhotoDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0380ABC6DD6131F0C2615A07 /* PhotoDetailView.swift */; };
-		8D783EAA7090D2EA2B07DDA4 /* RecycleBinBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3950709B418C2021597048A /* RecycleBinBar.swift */; };
 		534ED741A44BDFAC17FB2B08 /* RecycleBin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19AEFFAF51FDB0B86ED02C53 /* RecycleBin.swift */; };
 		630079499D908838C6A12464 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 32BB636196F91ED59D7A4919 /* Assets.xcassets */; };
+		6CF8F16F24AD73E299EBEFDA /* PhotoDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0380ABC6DD6131F0C2615A07 /* PhotoDetailView.swift */; };
+		830E0334752C8944379C1BF8 /* ThumbnailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D7169657F1AC1748A4C3B0D /* ThumbnailView.swift */; };
+		8D783EAA7090D2EA2B07DDA4 /* RecycleBinBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3950709B418C2021597048A /* RecycleBinBar.swift */; };
+		A65ABCF810F4BFD18B7DD3B6 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CFFEC0B33112FB1C76AF232 /* RootView.swift */; };
+		BFEC1060FE675E51F306F400 /* SPhotoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 271C2C16E7F5BC511D14978C /* SPhotoApp.swift */; };
+		DC5F06A7A4A1D3E8FD2CCBDA /* PhotoImageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C93259F2D00D4A85C5AB1C23 /* PhotoImageProvider.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		F5BF48AA40CAD7891EB709FC /* SPhoto.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SPhoto.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		271C2C16E7F5BC511D14978C /* SPhotoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPhotoApp.swift; sourceTree = "<group>"; };
-		9CFFEC0B33112FB1C76AF232 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
-		5519099CBFACE69E32E866F7 /* PhotoLibraryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLibraryModel.swift; sourceTree = "<group>"; };
-		C93259F2D00D4A85C5AB1C23 /* PhotoImageProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoImageProvider.swift; sourceTree = "<group>"; };
-		2338613016556CFE46787817 /* PhotoGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGridView.swift; sourceTree = "<group>"; };
-		3D7169657F1AC1748A4C3B0D /* ThumbnailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailView.swift; sourceTree = "<group>"; };
 		0380ABC6DD6131F0C2615A07 /* PhotoDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDetailView.swift; sourceTree = "<group>"; };
-		F3950709B418C2021597048A /* RecycleBinBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecycleBinBar.swift; sourceTree = "<group>"; };
 		19AEFFAF51FDB0B86ED02C53 /* RecycleBin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecycleBin.swift; sourceTree = "<group>"; };
+		2338613016556CFE46787817 /* PhotoGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGridView.swift; sourceTree = "<group>"; };
+		271C2C16E7F5BC511D14978C /* SPhotoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPhotoApp.swift; sourceTree = "<group>"; };
 		32BB636196F91ED59D7A4919 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		3D7169657F1AC1748A4C3B0D /* ThumbnailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailView.swift; sourceTree = "<group>"; };
+		5519099CBFACE69E32E866F7 /* PhotoLibraryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLibraryModel.swift; sourceTree = "<group>"; };
+		9CFFEC0B33112FB1C76AF232 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		C93259F2D00D4A85C5AB1C23 /* PhotoImageProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoImageProvider.swift; sourceTree = "<group>"; };
+		F3950709B418C2021597048A /* RecycleBinBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecycleBinBar.swift; sourceTree = "<group>"; };
+		F5BF48AA40CAD7891EB709FC /* SPhoto.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SPhoto.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -44,14 +44,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		8D3FC6DB5D0827F168A73277 = {
-			isa = PBXGroup;
-			children = (
-				5A8593C126E9FEF2D8E16F1A /* SPhoto */,
-				1BADDC1D73C1A20F347483E1 /* Products */,
-			);
-			sourceTree = "<group>";
-		};
 		1BADDC1D73C1A20F347483E1 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -83,6 +75,14 @@
 				19AEFFAF51FDB0B86ED02C53 /* RecycleBin.swift */,
 			);
 			path = Core;
+			sourceTree = "<group>";
+		};
+		8D3FC6DB5D0827F168A73277 = {
+			isa = PBXGroup;
+			children = (
+				5A8593C126E9FEF2D8E16F1A /* SPhoto */,
+				1BADDC1D73C1A20F347483E1 /* Products */,
+			);
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -169,6 +169,35 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		553194FECB7E1C4EBBAFB6CE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GTKGUAPFCN;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "SPhoto 需要读取相册来展示你的照片。";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleLightContent;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xieluoli.sphoto;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 		59233E4D684FB5A1A72525B8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -181,27 +210,27 @@
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MTL_FAST_MATH = YES;
-				SDKROOT = iphoneos;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				ENABLE_TESTABILITY = YES;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"DEBUG=1",
-					"$(inherited)",
-				);
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -219,6 +248,8 @@
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -228,11 +259,9 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
-				MTL_ENABLE_DEBUG_INFO = NO;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -245,9 +274,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GTKGUAPFCN;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "SPhoto \U9700\U8981\U8bfb\U53d6\U76f8\U518c\U6765\U5c55\U793a\U4f60\U7684\U7167\U7247\U3002";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "SPhoto 需要读取相册来展示你的照片。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -265,34 +295,6 @@
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
-		};
-		553194FECB7E1C4EBBAFB6CE /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "SPhoto \U9700\U8981\U8bfb\U53d6\U76f8\U518c\U6765\U5c55\U793a\U4f60\U7684\U7167\U7247\U3002";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleLightContent;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.xieluoli.sphoto;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
@@ -316,7 +318,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
 	};
 	rootObject = 46F86FAA6BBF9AC94A7E4595 /* Project object */;
 }
