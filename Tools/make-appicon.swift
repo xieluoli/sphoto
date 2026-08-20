@@ -1,94 +1,58 @@
-// 生成 App 图标：白色照片卡 + 镂空上滑箭头，对应「上滑把照片移走」这一个动作。
-// 用法：swift Tools/make-appicon.swift SPhoto/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+// 生成 App 图标：纯白底 + 黑色 SPhoto 字标。
+// 用法：swiftc -O Tools/make-appicon.swift -o /tmp/makeicon && /tmp/makeicon <输出路径>
 //
-// App Store 不接受带 alpha 通道的图标，所以位图用 noneSkipLast，产出的 PNG 只有 RGB 三个通道。
+// App Store 不接受带 alpha 通道的图标，所以位图用 noneSkipLast，产出的 PNG 只有 RGB 三通道。
 import CoreGraphics
+import CoreText
 import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
-let side = 1024
+let side: CGFloat = 1024
+let sideMargin: CGFloat = 96          // 两侧留白，字标不顶到圆角
+let text = "SPhoto"
 let outputPath = CommandLine.arguments[1]
 
 let rgb = CGColorSpaceCreateDeviceRGB()
 let ctx = CGContext(
-    data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
+    data: nil, width: Int(side), height: Int(side), bitsPerComponent: 8, bytesPerRow: 0,
     space: rgb, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
 )!
 
-let gradient = CGGradient(
-    colorsSpace: rgb,
-    colors: [
-        CGColor(red: 0.51, green: 0.36, blue: 0.98, alpha: 1),
-        CGColor(red: 0.20, green: 0.10, blue: 0.51, alpha: 1),
-    ] as CFArray,
-    locations: [0, 1]
-)!
-
-func paintBackground() {
-    ctx.drawLinearGradient(
-        gradient,
-        start: CGPoint(x: 0, y: side), end: CGPoint(x: side, y: 0),
-        options: []
-    )
-}
-
-/// 照片卡里镂空的「日照 + 山峦」剪影，让白卡片一眼是照片而不是文档。
-func punchPhotoGlyph() {
-    ctx.addEllipse(in: CGRect(x: 376, y: 512, width: 82, height: 82))   // 太阳
-    let ridge = CGMutablePath()                                          // 山峦
-    ridge.move(to: CGPoint(x: 354, y: 268))
-    ridge.addLine(to: CGPoint(x: 468, y: 412))
-    ridge.addLine(to: CGPoint(x: 548, y: 330))
-    ridge.addLine(to: CGPoint(x: 670, y: 452))
-    ridge.addLine(to: CGPoint(x: 670, y: 268))
-    ridge.closeSubpath()
-    ctx.addPath(ridge)
-}
-
-/// 卡片上方的上滑箭头，点明「往上划就移走」。
-func strokeChevron() {
-    ctx.setStrokeColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
-    ctx.setLineWidth(66)
-    ctx.setLineCap(.round)
-    ctx.setLineJoin(.round)
-    ctx.move(to: CGPoint(x: 388, y: 742))
-    ctx.addLine(to: CGPoint(x: 512, y: 858))
-    ctx.addLine(to: CGPoint(x: 636, y: 742))
-    ctx.strokePath()
-}
-
-paintBackground()
-
-// 竖版照片卡，轻微倾斜暗示正在被划走。
-let card = CGRect(x: -206, y: -247, width: 412, height: 494)
-ctx.saveGState()
-ctx.translateBy(x: 512, y: 430)
-ctx.rotate(by: -6 * .pi / 180)
+// 白底
 ctx.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
-ctx.addPath(CGPath(roundedRect: card, cornerWidth: 54, cornerHeight: 54, transform: nil))
-ctx.fillPath()
-ctx.restoreGState()
+ctx.fill(CGRect(x: 0, y: 0, width: side, height: side))
 
-// 剪影镂空：裁剪到卡片内，再把背景渐变画回去。
-ctx.saveGState()
-ctx.translateBy(x: 512, y: 430)
-ctx.rotate(by: -6 * .pi / 180)
-ctx.translateBy(x: -512, y: -430)
-ctx.addPath(CGPath(
-    roundedRect: CGRect(x: 306, y: 183, width: 412, height: 494),
-    cornerWidth: 54, cornerHeight: 54, transform: nil
-))
-ctx.clip()
-punchPhotoGlyph()
-ctx.clip()
-ctx.translateBy(x: 512, y: 430)
-ctx.rotate(by: 6 * .pi / 180)
-ctx.translateBy(x: -512, y: -430)
-paintBackground()
-ctx.restoreGState()
+/// 系统 UI 字体（SF Pro）的加粗版，跟 iOS 界面同源。
+func boldSystemFont(size: CGFloat) -> CTFont {
+    let base = CTFontCreateUIFontForLanguage(.system, size, nil)!
+    return CTFontCreateCopyWithSymbolicTraits(base, size, nil, .traitBold, .traitBold) ?? base
+}
 
-strokeChevron()
+func makeLine(fontSize: CGFloat) -> CTLine {
+    let attrs: [CFString: Any] = [
+        kCTFontAttributeName: boldSystemFont(size: fontSize),
+        kCTForegroundColorAttributeName: CGColor(red: 0, green: 0, blue: 0, alpha: 1),
+        kCTKernAttributeName: -fontSize * 0.015,   // 字标收紧一点更整体
+    ]
+    let attributed = CFAttributedStringCreate(nil, text as CFString, attrs as CFDictionary)!
+    return CTLineCreateWithAttributedString(attributed)
+}
+
+// 先按参考字号量一次，再按目标宽度反推真实字号
+let probeSize: CGFloat = 200
+let probeWidth = CTLineGetBoundsWithOptions(makeLine(fontSize: probeSize), .useOpticalBounds).width
+let fontSize = probeSize * (side - sideMargin * 2) / probeWidth
+
+let line = makeLine(fontSize: fontSize)
+let bounds = CTLineGetBoundsWithOptions(line, .useOpticalBounds)
+
+// 按字形的光学边界居中，而不是按基线，避免视觉偏上
+ctx.textPosition = CGPoint(
+    x: (side - bounds.width) / 2 - bounds.minX,
+    y: (side - bounds.height) / 2 - bounds.minY
+)
+CTLineDraw(line, ctx)
 
 let url = URL(fileURLWithPath: outputPath) as CFURL
 let dest = CGImageDestinationCreateWithURL(url, UTType.png.identifier as CFString, 1, nil)!
