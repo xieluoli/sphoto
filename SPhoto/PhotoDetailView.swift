@@ -1,7 +1,7 @@
 import Photos
 import SwiftUI
 
-/// 大图页：左滑下一张、右滑上一张、上滑过半移入回收站，底部固定「恢复」+「删除」。
+/// 大图页：左滑下一张、右滑上一张、上滑约屏高 1/5 移入回收站，底部固定「恢复」+「删除」。
 struct PhotoDetailView: View {
 
     let model: PhotoLibraryModel
@@ -26,6 +26,11 @@ struct PhotoDetailView: View {
     private static let discardTriggerRatio: CGFloat = 0.2
     /// 防误触底线：实际行程不到这个值一律不删，再快的轻扫也不行。
     private static let minimumDiscardTravel: CGFloat = 60
+    /// 上滑丢弃时下一张最多进到屏宽的这个比例。
+    ///
+    /// 不封顶的话上滑够远（屏宽那么多）下一张就满屏了，待删的这张被彻底盖住——
+    /// 清理 App 里这等于让人看着下一张删掉当前这张。
+    private static let maxDiscardPeekRatio: CGFloat = 0.6
 
     private enum DragAxis { case horizontal, vertical }
 
@@ -38,13 +43,12 @@ struct PhotoDetailView: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                ForEach(visibleIndices, id: \.self) { i in
-                    PhotoPage(asset: model.assets[i], size: geo.size)
+                ForEach(visiblePages) { page in
+                    PhotoPage(asset: page.asset, size: geo.size)
                         .offset(
-                            x: CGFloat(i - index) * geo.size.width + dragX,
-                            y: i == index ? dragY : 0
+                            x: pageOffsetX(for: page, screenWidth: geo.size.width),
+                            y: page.isCurrent ? dragY : 0
                         )
-                        .opacity(pageOpacity(at: i, screenHeight: geo.size.height))
                 }
 
                 discardHint(screenHeight: geo.size.height)
@@ -77,8 +81,25 @@ struct PhotoDetailView: View {
     }
 
     /// 只渲染当前页和左右各一页，几千张照片也不会把视图层级撑爆。
-    private var visibleIndices: [Int] {
-        [index - 1, index, index + 1].filter { $0 >= 0 && $0 < model.assets.count }
+    private var visiblePages: [VisiblePage] {
+        ((index - 1)...(index + 1)).compactMap { i in
+            guard model.assets.indices.contains(i) else { return nil }
+            return VisiblePage(asset: model.assets[i], stepsFromCurrent: i - index)
+        }
+    }
+
+    /// 横向位置。翻页时整条跟着 `dragX` 走；上滑丢弃时另算：下一张跟着上滑距离等量左移，
+    /// 手指抬到阈值、提示胶囊标红那一刻，它已经进来约屏宽的四成。
+    ///
+    /// 这样松手硬切时，接上来的是一张眼睛已经认识的图，而不是凭空跳出来一张。
+    /// 判据用 `dragY` 而不是 `lockedAxis`：`onEnded` 里 `lockedAxis` 会先被清掉，
+    /// 用它会让位移不足时的回弹动画中途失效，下一张直接瞬移回屏外。
+    private func pageOffsetX(for page: VisiblePage, screenWidth: CGFloat) -> CGFloat {
+        let resting = CGFloat(page.stepsFromCurrent) * screenWidth + dragX
+        guard page.stepsFromCurrent == 1, dragY < 0 else { return resting }
+        // 封顶，别让它盖住待删的这张；两条轴不会同时有值（锁轴时另一条已归零），
+        // 所以这里直接减，不必再 clamp 到 0。
+        return resting - min(-dragY, screenWidth * Self.maxDiscardPeekRatio)
     }
 
     @ViewBuilder
@@ -96,12 +117,6 @@ struct PhotoDetailView: View {
         }
     }
 
-    private func pageOpacity(at i: Int, screenHeight: CGFloat) -> Double {
-        guard i == index, dragY < 0 else { return 1 }
-        let progress = min(1, -dragY / (screenHeight * Self.discardTriggerRatio))
-        return 1 - Double(progress) * 0.6
-    }
-
     private func dragGesture(in size: CGSize) -> some Gesture {
         DragGesture()
             .onChanged { value in
@@ -109,7 +124,13 @@ struct PhotoDetailView: View {
                     let dx = abs(value.translation.width)
                     let dy = abs(value.translation.height)
                     guard max(dx, dy) > Self.axisLockThreshold else { return }
-                    lockedAxis = dx > dy ? .horizontal : .vertical
+                    let axis: DragAxis = dx > dy ? .horizontal : .vertical
+                    // 上一段回弹可能还没走完。不清掉另一条轴的残值，两段动画会叠加进
+                    // pageOffsetX，下一张会算到错误的位置上。
+                    withoutAnimation {
+                        if axis == .horizontal { dragY = 0 } else { dragX = 0 }
+                    }
+                    lockedAxis = axis
                 }
                 switch lockedAxis {
                 case .horizontal:
@@ -199,16 +220,51 @@ struct PhotoDetailView: View {
     }
 }
 
+/// 可见窗口里的一页。
+///
+/// 身份取资源标识而不是位置：照片被移入回收站后，位置 `i` 会换成另一张照片，
+/// 用位置做身份会让 SwiftUI 把视图连同它 state 里的旧图一起复用到新照片上——
+/// 屏幕上就会短暂地留着上一张。
+private struct VisiblePage: Identifiable {
+
+    let asset: PHAsset
+    /// 相对当前页的页数，用来算横向偏移。
+    let stepsFromCurrent: Int
+
+    var id: String { asset.localIdentifier }
+
+    var isCurrent: Bool { stepsFromCurrent == 0 }
+}
+
 private struct PhotoPage: View {
 
     let asset: PHAsset
     let size: CGSize
 
     @Environment(\.displayScale) private var displayScale
+
     @State private var image: UIImage?
+    @State private var prompt: DownloadPrompt = .none
+    @State private var downloadAttempt = 0
+
+    /// 照片下方的下载控件该长什么样。
+    private enum DownloadPrompt {
+        /// 不需要控件：原图已在本地，或它本来就取不到
+        case none
+        case offer
+        case downloading
+        case failed
+    }
+
+    init(asset: PHAsset, size: CGSize) {
+        self.asset = asset
+        self.size = size
+        // 从网格点进来的那张必然已在缩略图缓存里，首帧直接出图，不先闪一下转圈。
+        _image = State(initialValue: PhotoImageProvider.cachedThumbnail(for: asset))
+    }
 
     var body: some View {
-        Group {
+        ZStack {
             if let image {
                 Image(uiImage: image)
                     .resizable()
@@ -218,11 +274,77 @@ private struct PhotoPage: View {
             }
         }
         .frame(width: size.width, height: size.height)
-        .task(id: asset.localIdentifier) {
-            image = await PhotoImageProvider.fullImage(
-                for: asset,
-                pixelSize: CGSize(width: size.width * displayScale, height: size.height * displayScale)
-            )
+        .overlay(alignment: .bottom) { downloadControl }
+        .task { await loadLocalVersions() }
+        // 挂在 .task 上，这一页移出可见窗口（当前页左右各一页）时下载会跟着被撤销。
+        // 只翻一页时这页还在窗口里，下载继续跑——省流量是有的，但不是「一划走就停」。
+        .task(id: downloadAttempt) {
+            guard downloadAttempt > 0 else { return }
+            await downloadFromCloud()
         }
+    }
+
+    @ViewBuilder
+    private var downloadControl: some View {
+        switch prompt {
+        case .none:
+            EmptyView()
+        case .offer:
+            Button { downloadAttempt += 1 } label: {
+                Label("从 iCloud 下载原图", systemImage: "icloud.and.arrow.down")
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.bottom, 32)
+        case .downloading:
+            HStack(spacing: 8) {
+                ProgressView().tint(.white)
+                Text("正在从 iCloud 下载…")
+            }
+            .font(.callout)
+            .foregroundStyle(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color.black.opacity(0.5), in: Capsule())
+            .padding(.bottom, 32)
+        case .failed:
+            Button { downloadAttempt += 1 } label: {
+                Label("下载失败，重试", systemImage: "arrow.clockwise")
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.red)
+            .padding(.bottom, 32)
+        }
+    }
+
+    /// 缩略图铺底 → 禁网探测原图 → 按结果决定要不要摆下载按钮。
+    private func loadLocalVersions() async {
+        if image == nil { image = await PhotoImageProvider.thumbnail(for: asset) }
+
+        switch await PhotoImageProvider.fullImage(for: asset, pixelSize: pixelSize, allowsNetworkAccess: false) {
+        case .image(let full):
+            image = full
+        case .failure(.inCloud):
+            prompt = .offer
+        case .failure(.cancelled), .failure(.unavailable):
+            // 划走的页别改状态；真取不到也别摆一个下不到东西的按钮
+            break
+        }
+    }
+
+    private func downloadFromCloud() async {
+        prompt = .downloading
+        switch await PhotoImageProvider.fullImage(for: asset, pixelSize: pixelSize, allowsNetworkAccess: true) {
+        case .image(let full):
+            image = full
+            prompt = .none
+        case .failure(.cancelled):
+            prompt = .offer
+        case .failure(.inCloud), .failure(.unavailable):
+            prompt = .failed
+        }
+    }
+
+    private var pixelSize: CGSize {
+        CGSize(width: size.width * displayScale, height: size.height * displayScale)
     }
 }

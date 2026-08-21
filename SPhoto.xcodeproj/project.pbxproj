@@ -10,6 +10,7 @@
 		08DC7EDFB15DD6A273AB16EE /* PhotoLibraryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5519099CBFACE69E32E866F7 /* PhotoLibraryModel.swift */; };
 		21F6C674C45C37C402BBF35F /* PhotoGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2338613016556CFE46787817 /* PhotoGridView.swift */; };
 		534ED741A44BDFAC17FB2B08 /* RecycleBin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19AEFFAF51FDB0B86ED02C53 /* RecycleBin.swift */; };
+		2567C4B606CB49FCA7B9AABF /* PhotoRequestFailure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1479C67F65CB463B95DD47AA /* PhotoRequestFailure.swift */; };
 		630079499D908838C6A12464 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 32BB636196F91ED59D7A4919 /* Assets.xcassets */; };
 		A1B2C3D4E5F60718293A4B5C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60718293A4B5C6D /* PrivacyInfo.xcprivacy */; };
 		6CF8F16F24AD73E299EBEFDA /* PhotoDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0380ABC6DD6131F0C2615A07 /* PhotoDetailView.swift */; };
@@ -23,6 +24,7 @@
 /* Begin PBXFileReference section */
 		0380ABC6DD6131F0C2615A07 /* PhotoDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDetailView.swift; sourceTree = "<group>"; };
 		19AEFFAF51FDB0B86ED02C53 /* RecycleBin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecycleBin.swift; sourceTree = "<group>"; };
+		1479C67F65CB463B95DD47AA /* PhotoRequestFailure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoRequestFailure.swift; sourceTree = "<group>"; };
 		2338613016556CFE46787817 /* PhotoGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoGridView.swift; sourceTree = "<group>"; };
 		271C2C16E7F5BC511D14978C /* SPhotoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPhotoApp.swift; sourceTree = "<group>"; };
 		32BB636196F91ED59D7A4919 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -78,6 +80,7 @@
 			isa = PBXGroup;
 			children = (
 				19AEFFAF51FDB0B86ED02C53 /* RecycleBin.swift */,
+				1479C67F65CB463B95DD47AA /* PhotoRequestFailure.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -169,6 +172,7 @@
 				6CF8F16F24AD73E299EBEFDA /* PhotoDetailView.swift in Sources */,
 				8D783EAA7090D2EA2B07DDA4 /* RecycleBinBar.swift in Sources */,
 				534ED741A44BDFAC17FB2B08 /* RecycleBin.swift in Sources */,
+				2567C4B606CB49FCA7B9AABF /* PhotoRequestFailure.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -232,7 +236,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -264,7 +268,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
