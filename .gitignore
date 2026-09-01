@@ -4,3 +4,6 @@
 xcuserdata/
 *.xcuserstate
 DerivedData/
+
+# Claude Code 本地工作流配置（不公开）
+.claude/
