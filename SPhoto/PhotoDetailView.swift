@@ -12,6 +12,13 @@ struct PhotoDetailView: View {
     @State private var dragX: CGFloat = 0
     @State private var dragY: CGFloat = 0
     @State private var lockedAxis: DragAxis?
+    /// 移除动效里当前页的缩放与透明度，不在动效中时是 1 和 1。
+    @State private var discardScale: CGFloat = 1
+    @State private var discardOpacity: Double = 1
+    /// 移除动效正在播。这段时间不收新手势，免得半路被打断或者同一张被删两次。
+    @State private var isDiscarding = false
+    /// 补位进来那张的横向入场偏移，从屏宽动画回 0。
+    @State private var entryOffsetX: CGFloat = 0
 
     /// 位移超过这个值才判定拖拽方向，避免刚落指就锁错轴。
     private static let axisLockThreshold: CGFloat = 10
@@ -26,11 +33,13 @@ struct PhotoDetailView: View {
     private static let discardTriggerRatio: CGFloat = 0.2
     /// 防误触底线：实际行程不到这个值一律不删，再快的轻扫也不行。
     private static let minimumDiscardTravel: CGFloat = 60
-    /// 上滑丢弃时下一张最多进到屏宽的这个比例。
-    ///
-    /// 不封顶的话上滑够远（屏宽那么多）下一张就满屏了，待删的这张被彻底盖住——
-    /// 清理 App 里这等于让人看着下一张删掉当前这张。
-    private static let maxDiscardPeekRatio: CGFloat = 0.6
+    /// 移除动效：照片一边沿上滑方向再飞这么远，一边收到这个倍数并淡掉，像一滴水收拢消失。
+    private static let discardFlyAwayDistance: CGFloat = 120
+    private static let discardEndScale: CGFloat = 0.72
+    /// 退场比入场短：删掉的那张要快点让开；下一张进场可以从容一点。
+    /// 曲线一律用系统的 `.snappy`，苹果调好的参数不自己再仿一遍。
+    private static let discardDuration: TimeInterval = 0.24
+    private static let entryDuration: TimeInterval = 0.3
 
     private enum DragAxis { case horizontal, vertical }
 
@@ -45,6 +54,8 @@ struct PhotoDetailView: View {
             ZStack {
                 ForEach(visiblePages) { page in
                     PhotoPage(asset: page.asset, size: geo.size)
+                        .scaleEffect(page.isCurrent ? discardScale : 1)
+                        .opacity(page.isCurrent ? discardOpacity : 1)
                         .offset(
                             x: pageOffsetX(for: page, screenWidth: geo.size.width),
                             y: page.isCurrent ? dragY : 0
@@ -88,18 +99,12 @@ struct PhotoDetailView: View {
         }
     }
 
-    /// 横向位置。翻页时整条跟着 `dragX` 走；上滑丢弃时另算：下一张跟着上滑距离等量左移，
-    /// 手指抬到阈值、提示胶囊标红那一刻，它已经进来约屏宽的四成。
+    /// 横向位置：静止位置加跟手的翻页位移，当前页再加上它补位进来时还没走完的入场偏移。
     ///
-    /// 这样松手硬切时，接上来的是一张眼睛已经认识的图，而不是凭空跳出来一张。
-    /// 判据用 `dragY` 而不是 `lockedAxis`：`onEnded` 里 `lockedAxis` 会先被清掉，
-    /// 用它会让位移不足时的回弹动画中途失效，下一张直接瞬移回屏外。
+    /// 上滑期间这里不做任何事——当前图让出来的位置就该是空的黑背景。判断这张要不要删的时候，
+    /// 视线里不能有另一张图在动。
     private func pageOffsetX(for page: VisiblePage, screenWidth: CGFloat) -> CGFloat {
-        let resting = CGFloat(page.stepsFromCurrent) * screenWidth + dragX
-        guard page.stepsFromCurrent == 1, dragY < 0 else { return resting }
-        // 封顶，别让它盖住待删的这张；两条轴不会同时有值（锁轴时另一条已归零），
-        // 所以这里直接减，不必再 clamp 到 0。
-        return resting - min(-dragY, screenWidth * Self.maxDiscardPeekRatio)
+        CGFloat(page.stepsFromCurrent) * screenWidth + dragX + (page.isCurrent ? entryOffsetX : 0)
     }
 
     @ViewBuilder
@@ -120,15 +125,19 @@ struct PhotoDetailView: View {
     private func dragGesture(in size: CGSize) -> some Gesture {
         DragGesture()
             .onChanged { value in
+                // 移除动效没播完就别收手势，否则这一段会被拖拽的位移打断。
+                // 下一张的入场动画不在此列，那时人已经在看新的一张，可以直接接着划。
+                guard !isDiscarding else { return }
                 if lockedAxis == nil {
                     let dx = abs(value.translation.width)
                     let dy = abs(value.translation.height)
                     guard max(dx, dy) > Self.axisLockThreshold else { return }
                     let axis: DragAxis = dx > dy ? .horizontal : .vertical
-                    // 上一段回弹可能还没走完。不清掉另一条轴的残值，两段动画会叠加进
-                    // pageOffsetX，下一张会算到错误的位置上。
+                    // 上一段回弹或者下一张的入场可能还没走完。不清掉这些残值，两段动画会
+                    // 叠加进 pageOffsetX，页面会算到错误的位置上。
                     withoutAnimation {
                         if axis == .horizontal { dragY = 0 } else { dragX = 0 }
+                        entryOffsetX = 0
                     }
                     lockedAxis = axis
                 }
@@ -142,6 +151,7 @@ struct PhotoDetailView: View {
                 }
             }
             .onEnded { value in
+                guard !isDiscarding else { return }
                 switch lockedAxis {
                 case .horizontal:
                     endHorizontalDrag(translation: value.translation.width, screenWidth: size.width)
@@ -149,7 +159,7 @@ struct PhotoDetailView: View {
                     endVerticalDrag(
                         translation: min(0, value.translation.height),
                         predictedTranslation: min(0, value.predictedEndTranslation.height),
-                        screenHeight: size.height
+                        screenSize: size
                     )
                 case nil:
                     break
@@ -174,26 +184,41 @@ struct PhotoDetailView: View {
     }
 
     /// 慢拖看实际位移，快扫看速度投影，两者任一越线就移入回收站。
-    private func endVerticalDrag(translation: CGFloat, predictedTranslation: CGFloat, screenHeight: CGFloat) {
+    private func endVerticalDrag(translation: CGFloat, predictedTranslation: CGFloat, screenSize: CGSize) {
         let travelled = -translation
         let projected = -predictedTranslation
-        let threshold = screenHeight * Self.discardTriggerRatio
+        let threshold = screenSize.height * Self.discardTriggerRatio
 
         guard travelled >= Self.minimumDiscardTravel, max(travelled, projected) >= threshold else {
             withAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.85)) { dragY = 0 }
             return
         }
-        discardCurrent()
+        discardCurrent(screenWidth: screenSize.width)
     }
 
-    private func discardCurrent() {
+    /// 分两段：先把这张收拢着飞出去，落地之后才真正移入回收站，下一张跟着从右侧滑进来。
+    ///
+    /// 数据是在同一帧里换掉的：抹掉退场状态、把补位那张放到屏外，都发生在 `moveToRecycleBin`
+    /// 之后的同一个无动画事务里，所以中间不会露出空白，也不会有哪一张亮一下。
+    private func discardCurrent(screenWidth: CGFloat) {
         guard model.assets.indices.contains(index) else { return }
         let asset = model.assets[index]
-        // 被移走的那张已经拖到半透明，这里直接换成下一张，不要再补一段回弹动画。
-        withoutAnimation {
-            model.moveToRecycleBin(asset)
-            dragY = 0
-            clampIndex()
+        isDiscarding = true
+        withAnimation(.snappy(duration: Self.discardDuration)) {
+            dragY -= Self.discardFlyAwayDistance
+            discardScale = Self.discardEndScale
+            discardOpacity = 0
+        } completion: {
+            withoutAnimation {
+                model.moveToRecycleBin(asset)
+                dragY = 0
+                discardScale = 1
+                discardOpacity = 1
+                entryOffsetX = screenWidth
+                clampIndex()
+            }
+            isDiscarding = false
+            withAnimation(.snappy(duration: Self.entryDuration)) { entryOffsetX = 0 }
         }
     }
 
@@ -210,7 +235,11 @@ struct PhotoDetailView: View {
         guard let restored = model.restoreLatest() else { return }
         guard let restoredIndex = model.assets.firstIndex(where: { $0.localIdentifier == restored.localIdentifier }) else { return }
         // 恢复的那张可能离当前位置很远，跨页动画只会糊成一片。
-        withoutAnimation { index = restoredIndex }
+        // 上一张的入场动画还没走完时点恢复，残余偏移要一起抹掉，否则它带着偏移出现。
+        withoutAnimation {
+            index = restoredIndex
+            entryOffsetX = 0
+        }
     }
 
     private func withoutAnimation(_ body: () -> Void) {
