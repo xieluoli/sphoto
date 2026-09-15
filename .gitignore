@@ -7,3 +7,6 @@ DerivedData/
 
 # Claude Code 本地工作流配置（不公开）
 .claude/
+
+# OpenSpec 需求与规格（内部工作流，不公开）
+openspec/

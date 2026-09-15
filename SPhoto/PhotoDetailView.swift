@@ -1,7 +1,7 @@
 import Photos
 import SwiftUI
 
-/// 大图页：左滑下一张、右滑上一张、上滑过半移入回收站，底部固定「恢复」+「删除」。
+/// 大图页：左滑下一张、右滑上一张、上滑约屏高 1/5 移入回收站，底部固定「恢复」+「删除」。
 struct PhotoDetailView: View {
 
     let model: PhotoLibraryModel
@@ -12,6 +12,13 @@ struct PhotoDetailView: View {
     @State private var dragX: CGFloat = 0
     @State private var dragY: CGFloat = 0
     @State private var lockedAxis: DragAxis?
+    /// 移除动效里当前页的缩放与透明度，不在动效中时是 1 和 1。
+    @State private var discardScale: CGFloat = 1
+    @State private var discardOpacity: Double = 1
+    /// 移除动效正在播。这段时间不收新手势，免得半路被打断或者同一张被删两次。
+    @State private var isDiscarding = false
+    /// 补位进来那张的横向入场偏移，从屏宽动画回 0。
+    @State private var entryOffsetX: CGFloat = 0
 
     /// 位移超过这个值才判定拖拽方向，避免刚落指就锁错轴。
     private static let axisLockThreshold: CGFloat = 10
@@ -26,6 +33,13 @@ struct PhotoDetailView: View {
     private static let discardTriggerRatio: CGFloat = 0.2
     /// 防误触底线：实际行程不到这个值一律不删，再快的轻扫也不行。
     private static let minimumDiscardTravel: CGFloat = 60
+    /// 移除动效：照片一边沿上滑方向再飞这么远，一边收到这个倍数并淡掉，像一滴水收拢消失。
+    private static let discardFlyAwayDistance: CGFloat = 120
+    private static let discardEndScale: CGFloat = 0.72
+    /// 退场比入场短：删掉的那张要快点让开；下一张进场可以从容一点。
+    /// 曲线一律用系统的 `.snappy`，苹果调好的参数不自己再仿一遍。
+    private static let discardDuration: TimeInterval = 0.24
+    private static let entryDuration: TimeInterval = 0.3
 
     private enum DragAxis { case horizontal, vertical }
 
@@ -38,13 +52,14 @@ struct PhotoDetailView: View {
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                ForEach(visibleIndices, id: \.self) { i in
-                    PhotoPage(asset: model.assets[i], size: geo.size)
+                ForEach(visiblePages) { page in
+                    PhotoPage(asset: page.asset, size: geo.size)
+                        .scaleEffect(page.isCurrent ? discardScale : 1)
+                        .opacity(page.isCurrent ? discardOpacity : 1)
                         .offset(
-                            x: CGFloat(i - index) * geo.size.width + dragX,
-                            y: i == index ? dragY : 0
+                            x: pageOffsetX(for: page, screenWidth: geo.size.width),
+                            y: page.isCurrent ? dragY : 0
                         )
-                        .opacity(pageOpacity(at: i, screenHeight: geo.size.height))
                 }
 
                 discardHint(screenHeight: geo.size.height)
@@ -77,8 +92,19 @@ struct PhotoDetailView: View {
     }
 
     /// 只渲染当前页和左右各一页，几千张照片也不会把视图层级撑爆。
-    private var visibleIndices: [Int] {
-        [index - 1, index, index + 1].filter { $0 >= 0 && $0 < model.assets.count }
+    private var visiblePages: [VisiblePage] {
+        ((index - 1)...(index + 1)).compactMap { i in
+            guard model.assets.indices.contains(i) else { return nil }
+            return VisiblePage(asset: model.assets[i], stepsFromCurrent: i - index)
+        }
+    }
+
+    /// 横向位置：静止位置加跟手的翻页位移，当前页再加上它补位进来时还没走完的入场偏移。
+    ///
+    /// 上滑期间这里不做任何事——当前图让出来的位置就该是空的黑背景。判断这张要不要删的时候，
+    /// 视线里不能有另一张图在动。
+    private func pageOffsetX(for page: VisiblePage, screenWidth: CGFloat) -> CGFloat {
+        CGFloat(page.stepsFromCurrent) * screenWidth + dragX + (page.isCurrent ? entryOffsetX : 0)
     }
 
     @ViewBuilder
@@ -96,20 +122,24 @@ struct PhotoDetailView: View {
         }
     }
 
-    private func pageOpacity(at i: Int, screenHeight: CGFloat) -> Double {
-        guard i == index, dragY < 0 else { return 1 }
-        let progress = min(1, -dragY / (screenHeight * Self.discardTriggerRatio))
-        return 1 - Double(progress) * 0.6
-    }
-
     private func dragGesture(in size: CGSize) -> some Gesture {
         DragGesture()
             .onChanged { value in
+                // 移除动效没播完就别收手势，否则这一段会被拖拽的位移打断。
+                // 下一张的入场动画不在此列，那时人已经在看新的一张，可以直接接着划。
+                guard !isDiscarding else { return }
                 if lockedAxis == nil {
                     let dx = abs(value.translation.width)
                     let dy = abs(value.translation.height)
                     guard max(dx, dy) > Self.axisLockThreshold else { return }
-                    lockedAxis = dx > dy ? .horizontal : .vertical
+                    let axis: DragAxis = dx > dy ? .horizontal : .vertical
+                    // 上一段回弹或者下一张的入场可能还没走完。不清掉这些残值，两段动画会
+                    // 叠加进 pageOffsetX，页面会算到错误的位置上。
+                    withoutAnimation {
+                        if axis == .horizontal { dragY = 0 } else { dragX = 0 }
+                        entryOffsetX = 0
+                    }
+                    lockedAxis = axis
                 }
                 switch lockedAxis {
                 case .horizontal:
@@ -121,6 +151,7 @@ struct PhotoDetailView: View {
                 }
             }
             .onEnded { value in
+                guard !isDiscarding else { return }
                 switch lockedAxis {
                 case .horizontal:
                     endHorizontalDrag(translation: value.translation.width, screenWidth: size.width)
@@ -128,7 +159,7 @@ struct PhotoDetailView: View {
                     endVerticalDrag(
                         translation: min(0, value.translation.height),
                         predictedTranslation: min(0, value.predictedEndTranslation.height),
-                        screenHeight: size.height
+                        screenSize: size
                     )
                 case nil:
                     break
@@ -153,26 +184,41 @@ struct PhotoDetailView: View {
     }
 
     /// 慢拖看实际位移，快扫看速度投影，两者任一越线就移入回收站。
-    private func endVerticalDrag(translation: CGFloat, predictedTranslation: CGFloat, screenHeight: CGFloat) {
+    private func endVerticalDrag(translation: CGFloat, predictedTranslation: CGFloat, screenSize: CGSize) {
         let travelled = -translation
         let projected = -predictedTranslation
-        let threshold = screenHeight * Self.discardTriggerRatio
+        let threshold = screenSize.height * Self.discardTriggerRatio
 
         guard travelled >= Self.minimumDiscardTravel, max(travelled, projected) >= threshold else {
             withAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.85)) { dragY = 0 }
             return
         }
-        discardCurrent()
+        discardCurrent(screenWidth: screenSize.width)
     }
 
-    private func discardCurrent() {
+    /// 分两段：先把这张收拢着飞出去，落地之后才真正移入回收站，下一张跟着从右侧滑进来。
+    ///
+    /// 数据是在同一帧里换掉的：抹掉退场状态、把补位那张放到屏外，都发生在 `moveToRecycleBin`
+    /// 之后的同一个无动画事务里，所以中间不会露出空白，也不会有哪一张亮一下。
+    private func discardCurrent(screenWidth: CGFloat) {
         guard model.assets.indices.contains(index) else { return }
         let asset = model.assets[index]
-        // 被移走的那张已经拖到半透明，这里直接换成下一张，不要再补一段回弹动画。
-        withoutAnimation {
-            model.moveToRecycleBin(asset)
-            dragY = 0
-            clampIndex()
+        isDiscarding = true
+        withAnimation(.snappy(duration: Self.discardDuration)) {
+            dragY -= Self.discardFlyAwayDistance
+            discardScale = Self.discardEndScale
+            discardOpacity = 0
+        } completion: {
+            withoutAnimation {
+                model.moveToRecycleBin(asset)
+                dragY = 0
+                discardScale = 1
+                discardOpacity = 1
+                entryOffsetX = screenWidth
+                clampIndex()
+            }
+            isDiscarding = false
+            withAnimation(.snappy(duration: Self.entryDuration)) { entryOffsetX = 0 }
         }
     }
 
@@ -189,7 +235,11 @@ struct PhotoDetailView: View {
         guard let restored = model.restoreLatest() else { return }
         guard let restoredIndex = model.assets.firstIndex(where: { $0.localIdentifier == restored.localIdentifier }) else { return }
         // 恢复的那张可能离当前位置很远，跨页动画只会糊成一片。
-        withoutAnimation { index = restoredIndex }
+        // 上一张的入场动画还没走完时点恢复，残余偏移要一起抹掉，否则它带着偏移出现。
+        withoutAnimation {
+            index = restoredIndex
+            entryOffsetX = 0
+        }
     }
 
     private func withoutAnimation(_ body: () -> Void) {
@@ -199,16 +249,51 @@ struct PhotoDetailView: View {
     }
 }
 
+/// 可见窗口里的一页。
+///
+/// 身份取资源标识而不是位置：照片被移入回收站后，位置 `i` 会换成另一张照片，
+/// 用位置做身份会让 SwiftUI 把视图连同它 state 里的旧图一起复用到新照片上——
+/// 屏幕上就会短暂地留着上一张。
+private struct VisiblePage: Identifiable {
+
+    let asset: PHAsset
+    /// 相对当前页的页数，用来算横向偏移。
+    let stepsFromCurrent: Int
+
+    var id: String { asset.localIdentifier }
+
+    var isCurrent: Bool { stepsFromCurrent == 0 }
+}
+
 private struct PhotoPage: View {
 
     let asset: PHAsset
     let size: CGSize
 
     @Environment(\.displayScale) private var displayScale
+
     @State private var image: UIImage?
+    @State private var prompt: DownloadPrompt = .none
+    @State private var downloadAttempt = 0
+
+    /// 照片下方的下载控件该长什么样。
+    private enum DownloadPrompt {
+        /// 不需要控件：原图已在本地，或它本来就取不到
+        case none
+        case offer
+        case downloading
+        case failed
+    }
+
+    init(asset: PHAsset, size: CGSize) {
+        self.asset = asset
+        self.size = size
+        // 从网格点进来的那张必然已在缩略图缓存里，首帧直接出图，不先闪一下转圈。
+        _image = State(initialValue: PhotoImageProvider.cachedThumbnail(for: asset))
+    }
 
     var body: some View {
-        Group {
+        ZStack {
             if let image {
                 Image(uiImage: image)
                     .resizable()
@@ -218,11 +303,77 @@ private struct PhotoPage: View {
             }
         }
         .frame(width: size.width, height: size.height)
-        .task(id: asset.localIdentifier) {
-            image = await PhotoImageProvider.fullImage(
-                for: asset,
-                pixelSize: CGSize(width: size.width * displayScale, height: size.height * displayScale)
-            )
+        .overlay(alignment: .bottom) { downloadControl }
+        .task { await loadLocalVersions() }
+        // 挂在 .task 上，这一页移出可见窗口（当前页左右各一页）时下载会跟着被撤销。
+        // 只翻一页时这页还在窗口里，下载继续跑——省流量是有的，但不是「一划走就停」。
+        .task(id: downloadAttempt) {
+            guard downloadAttempt > 0 else { return }
+            await downloadFromCloud()
         }
+    }
+
+    @ViewBuilder
+    private var downloadControl: some View {
+        switch prompt {
+        case .none:
+            EmptyView()
+        case .offer:
+            Button { downloadAttempt += 1 } label: {
+                Label("从 iCloud 下载原图", systemImage: "icloud.and.arrow.down")
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.bottom, 32)
+        case .downloading:
+            HStack(spacing: 8) {
+                ProgressView().tint(.white)
+                Text("正在从 iCloud 下载…")
+            }
+            .font(.callout)
+            .foregroundStyle(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color.black.opacity(0.5), in: Capsule())
+            .padding(.bottom, 32)
+        case .failed:
+            Button { downloadAttempt += 1 } label: {
+                Label("下载失败，重试", systemImage: "arrow.clockwise")
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.red)
+            .padding(.bottom, 32)
+        }
+    }
+
+    /// 缩略图铺底 → 禁网探测原图 → 按结果决定要不要摆下载按钮。
+    private func loadLocalVersions() async {
+        if image == nil { image = await PhotoImageProvider.thumbnail(for: asset) }
+
+        switch await PhotoImageProvider.fullImage(for: asset, pixelSize: pixelSize, allowsNetworkAccess: false) {
+        case .image(let full):
+            image = full
+        case .failure(.inCloud):
+            prompt = .offer
+        case .failure(.cancelled), .failure(.unavailable):
+            // 划走的页别改状态；真取不到也别摆一个下不到东西的按钮
+            break
+        }
+    }
+
+    private func downloadFromCloud() async {
+        prompt = .downloading
+        switch await PhotoImageProvider.fullImage(for: asset, pixelSize: pixelSize, allowsNetworkAccess: true) {
+        case .image(let full):
+            image = full
+            prompt = .none
+        case .failure(.cancelled):
+            prompt = .offer
+        case .failure(.inCloud), .failure(.unavailable):
+            prompt = .failed
+        }
+    }
+
+    private var pixelSize: CGSize {
+        CGSize(width: size.width * displayScale, height: size.height * displayScale)
     }
 }

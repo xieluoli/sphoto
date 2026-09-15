@@ -6,7 +6,6 @@ struct ThumbnailView: View {
     let asset: PHAsset
     let sideLength: CGFloat
 
-    @Environment(\.displayScale) private var displayScale
     @State private var image: UIImage?
 
     var body: some View {
@@ -23,11 +22,7 @@ struct ThumbnailView: View {
             .clipped()
             .contentShape(Rectangle())
             .task(id: asset.localIdentifier) {
-                let side = sideLength * displayScale
-                image = await PhotoImageProvider.thumbnail(
-                    for: asset,
-                    pixelSize: CGSize(width: side, height: side)
-                )
+                image = await PhotoImageProvider.thumbnail(for: asset)
             }
     }
 }
